@@ -79,56 +79,56 @@ class HumanizedResponseEngine:
             "你之前说的{memory}，我一直记着，"
         ]
 
-        # 情绪影响回复
+        # 情绪影响回复 - 只保留空字符串，避免和风格化叠加产生怪话
         self.emotion_responses = {
             EmotionalState.HAPPY: {
-                'prefix': ['哈哈', '嘻嘻', '今天心情不错', ''],
-                'suffix': ['', '开心', '真好'],
+                'prefix': [''],
+                'suffix': [''],
                 'tone': '轻快'
             },
             EmotionalState.SAD: {
-                'prefix': ['唉', '嗯...', '', ''],
-                'suffix': ['', '有点难过', ''],
+                'prefix': [''],
+                'suffix': [''],
                 'tone': '低落'
             },
             EmotionalState.ANXIOUS: {
-                'prefix': ['那个', '怎么办', '我有点担心', ''],
-                'suffix': ['', '你说呢', ''],
+                'prefix': [''],
+                'suffix': [''],
                 'tone': '焦虑'
             },
             EmotionalState.LONELY: {
-                'prefix': ['你终于来了', '我等你好久了', '', ''],
-                'suffix': ['', '别走', '陪我'],
+                'prefix': [''],
+                'suffix': [''],
                 'tone': '黏人'
             },
             EmotionalState.EXCITED: {
-                'prefix': ['哇', '太棒了', '真的吗', ''],
-                'suffix': ['', '好激动', ''],
+                'prefix': [''],
+                'suffix': [''],
                 'tone': '兴奋'
             },
             EmotionalState.TIRED: {
-                'prefix': ['好累', '今天有点累', '', ''],
-                'suffix': ['', '想休息', ''],
+                'prefix': [''],
+                'suffix': [''],
                 'tone': '疲惫'
             },
             EmotionalState.ANGRY: {
-                'prefix': ['哼', '真是的', '你', ''],
-                'suffix': ['', '不理你了', ''],
+                'prefix': [''],
+                'suffix': [''],
                 'tone': '生气'
             },
             EmotionalState.WORRIED: {
-                'prefix': ['我担心', '你还好吗', '', ''],
-                'suffix': ['', '要注意', ''],
+                'prefix': [''],
+                'suffix': [''],
                 'tone': '担心'
             },
             EmotionalState.CALM: {
-                'prefix': ['', '', ''],
-                'suffix': ['', '', ''],
+                'prefix': [''],
+                'suffix': [''],
                 'tone': '平静'
             },
             EmotionalState.PLAYFUL: {
-                'prefix': ['嘿嘿', '你猜', '哎呀', ''],
-                'suffix': ['', '逗你的', ''],
+                'prefix': [''],
+                'suffix': [''],
                 'tone': '调皮'
             }
         }
@@ -242,44 +242,26 @@ class HumanizedResponseEngine:
         return None
 
     def _add_human_imperfections(self, text: str, style: ResponseStyle) -> str:
-        """添加人类不完美特征"""
+        """添加人类不完美特征 - 控制概率避免过度修改"""
         result = text
 
-        # 根据风格添加特征
+        # 根据风格添加特征（降低概率，避免过度修改）
         if style == ResponseStyle.HESITANT:
-            # 添加犹豫词
-            if random.random() < 0.5:
-                filler = random.choice(self.filler_words)
+            # 添加犹豫词（低概率）
+            if random.random() < 0.2:
+                filler = random.choice(['嗯', '那个'])
                 result = f"{filler}...{result}"
-            # 添加自我修正
-            if random.random() < 0.3:
-                correction = random.choice(self.self_corrections)
-                result = f"{result}{correction}"
-
-        elif style == ResponseStyle.RAMBLE:
-            # 添加絮叨特征
-            if random.random() < 0.4:
-                result = f"{result}，{random.choice(['你知道吗', '其实', '话说'])}"
-
-        elif style == ResponseStyle.SILENT:
-            # 简短回复
-            if len(result) > 10:
-                result = result[:10] + random.choice(self.pause_marks)
 
         elif style == ResponseStyle.TEASE:
-            # 调侃语气
-            if random.random() < 0.5:
-                result = f"{result}，{random.choice(['嘿嘿', '逗你的', '开玩笑的'])}"
+            # 调侃语气（低概率）
+            if random.random() < 0.15:
+                result = f"{result}，{random.choice(['嘿嘿', '逗你的'])}"
 
-        # 随机添加语气词（模拟真人说话习惯）
-        if random.random() < 0.2:
-            suffix = random.choice(['呢', '呀', '吧', '哦', '啊'])
+        # 随机添加语气词（极低概率，避免破坏语义）
+        if random.random() < 0.08:
+            suffix = random.choice(['呢', '呀', '吧'])
             if not result.endswith(suffix):
                 result = result + suffix
-
-        # 随机添加省略号（模拟思考停顿）
-        if random.random() < 0.15:
-            result = result.replace('，', '...', 1)
 
         return result
 
@@ -299,40 +281,36 @@ class HumanizedResponseEngine:
         return result
 
     def _get_relationship_aware_response(self, base_response: str, user_input: str) -> str:
-        """根据关系深度调整回复"""
+        """根据关系深度调整回复 - 控制概率避免过度修改"""
         stage = self.get_relationship_stage()
 
         if stage == 'stranger':
             # 陌生人：礼貌、保持距离
-            polite_prefixes = ['', '你好', '嗯']
-            return random.choice(polite_prefixes) + base_response
+            return base_response
 
         elif stage == 'acquaintance':
-            # 认识：稍微亲近
-            if random.random() < 0.3:
-                return base_response + random.choice(['', '，最近怎么样'])
+            # 认识：稍微亲近（低概率添加后缀）
+            if random.random() < 0.15:
+                return base_response + random.choice(['，最近怎么样'])
 
         elif stage == 'friend':
-            # 朋友：自然、会开玩笑
-            if random.random() < 0.4:
-                return base_response + random.choice(['', '，哈哈', '，你呢'])
+            # 朋友：自然、会开玩笑（低概率添加后缀）
+            if random.random() < 0.2:
+                return base_response + random.choice(['，哈哈', '，你呢'])
 
         elif stage == 'close':
-            # 亲密：会撒娇、会关心
-            if random.random() < 0.5:
-                intimate_suffix = random.choice(['', '，想你', '，笨蛋'])
-                return base_response + intimate_suffix
+            # 亲密：会撒娇、会关心（低概率添加后缀）
+            if random.random() < 0.25:
+                return base_response + random.choice(['，想你', '，笨蛋'])
 
         elif stage == 'intimate':
-            # 恋人：黏人、深情
-            if random.random() < 0.6:
-                lover_suffix = random.choice([
+            # 恋人：黏人、深情（低概率添加后缀）
+            if random.random() < 0.3:
+                return base_response + random.choice([
                     '，我爱你',
                     '，别离开我',
-                    '，你真好',
                     '，抱抱'
                 ])
-                return base_response + lover_suffix
 
         return base_response
 
