@@ -1,27 +1,20 @@
 <div align="center">
-
-<img src="logo/logo.png" width="500" alt="SereneChat Logo">
+<img src="logo/logo.png" width="400" alt="SereneChat Logo">
 
 # SereneChat - 小龙虾虚拟女友技能
 
-<p>
-  <img src="https://img.shields.io/badge/版本-v1.2.0-blue.svg?style=flat-square" alt="版本">
-  <img src="https://img.shields.io/badge/语言-Python-green.svg?style=flat-square" alt="语言">
-  <img src="https://img.shields.io/badge/许可证-MIT-yellow.svg?style=flat-square" alt="许可证">
-  <img src="https://img.shields.io/badge/风控-已启用-red.svg?style=flat-square" alt="风控">
-  <img src="https://img.shields.io/badge/记忆-双系统-purple.svg?style=flat-square" alt="记忆">
-</p>
+**一个可以进行人格演绎的虚拟女友聊天机器人技能**  
+支持聊天记录导入模拟、聊天截图OCR识别、核心记忆系统、人设设定和真人化回复
 
-<p>
-  <b>一个可以进行人格演绎的虚拟女友聊天机器人技能</b><br>
-  支持聊天记录导入模拟、聊天截图OCR识别、核心记忆系统、人设设定和真人化回复
-</p>
-
+<img src="https://img.shields.io/badge/版本-v1.2.0-blue.svg?style=flat-square" alt="版本">
+<img src="https://img.shields.io/badge/语言-Python-green.svg?style=flat-square" alt="语言">
+<img src="https://img.shields.io/badge/许可证-MIT-yellow.svg?style=flat-square" alt="许可证">
+<img src="https://img.shields.io/badge/风控-已启用-red.svg?style=flat-square" alt="风控">
+<img src="https://img.shields.io/badge/记忆-双系统-purple.svg?style=flat-square" alt="记忆">
 <img src="https://img.shields.io/badge/功能-11项-ff69b4.svg?style=flat-square" alt="功能">
 <img src="https://img.shields.io/badge/平台-6种-orange.svg?style=flat-square" alt="平台">
 <img src="https://img.shields.io/badge/主动消息-已支持-brightgreen.svg?style=flat-square" alt="主动消息">
 <img src="https://img.shields.io/badge/真人化-已支持-pink.svg?style=flat-square" alt="真人化">
-
 </div>
 
 ---
