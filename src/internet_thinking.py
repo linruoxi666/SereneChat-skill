@@ -278,9 +278,13 @@ class InternetThinking:
         用联网思考的结果丰富回复
         将知识自然融入回复中
         """
+        # 如果基础回复太短或太简单，不添加知识（避免突兀）
+        if len(base_response) <= 3 or base_response in ['嗯', '啊', '哦', '好', '行', '你说', '这样啊', '我知道了']:
+            return base_response
+
         topic, confidence = self.analyze_topic(user_input)
 
-        if not topic or confidence < 0.4:
+        if not topic or confidence < 0.5:
             # 匹配度不够，不添加知识
             return base_response
 
@@ -289,7 +293,7 @@ class InternetThinking:
             return base_response
 
         # 决定是否添加知识（不是每次都加，保持自然）
-        if random.random() > 0.6:
+        if random.random() > 0.4:
             return base_response
 
         # 选择一个相关知识片段
@@ -298,7 +302,6 @@ class InternetThinking:
         # 将知识自然融入回复
         enrichments = [
             f"{base_response}，{fact}",
-            f"{fact}，{base_response}",
             f"{base_response}。对了，{fact}",
         ]
 
