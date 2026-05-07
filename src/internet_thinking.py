@@ -288,12 +288,18 @@ class InternetThinking:
             # 匹配度不够，不添加知识
             return base_response
 
+        # 日常问候类话题不添加知识（避免生硬）
+        if topic in ['美食'] and any(word in user_input for word in ['吃饭', '吃了', '饿', '喝']):
+            # 用户问"吃饭了吗"这类日常问候，不塞知识
+            if '吗' in user_input or '了' in user_input:
+                return base_response
+
         knowledge = self.get_knowledge(topic)
         if not knowledge:
             return base_response
 
         # 决定是否添加知识（不是每次都加，保持自然）
-        if random.random() > 0.4:
+        if random.random() > 0.5:
             return base_response
 
         # 选择一个相关知识片段
