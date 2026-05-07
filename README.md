@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="logo/logo.png" width="400" alt="SereneChat Logo">
+
 # SereneChat - 小龙虾虚拟女友技能
 
 <p>

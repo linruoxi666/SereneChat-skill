@@ -91,8 +91,7 @@ class ChatEngine:
 
         self.chat_history.append({
             'user': user_input,
-            'bot': response,
-            'internal_monologue': internal_monologue
+            'bot': response
         })
         
         if len(self.chat_history) > 50:
@@ -259,20 +258,25 @@ class ChatEngine:
         try:
             records = ChatParser.parse_file(filepath)
             style_info = ChatParser.analyze_chat_style(records)
-            
+
             for record in records:
                 if record.sender != '小龙虾':
                     self.chat_history.append({
                         'user': record.content,
                         'bot': self._generate_response(record.content, "", "")
                     })
-            
+
+            # 根据导入的聊天记录设置关系深度（用户数据优先）
             if style_info:
-                self.personality.relationship_level = min(
-                    1.0, 
-                    0.3 + (style_info.get('total_messages', 0) / 100) * 0.7
-                )
-            
+                msg_count = style_info.get('total_messages', 0)
+                # 基于聊天记录数量计算关系深度
+                imported_depth = min(1.0, 0.3 + (msg_count / 100) * 0.7)
+                # 同步到真人化引擎
+                self.humanized_engine.relationship_depth = imported_depth
+                self.humanized_engine.total_interactions = msg_count
+                # 同步到人格系统
+                self.personality.relationship_level = imported_depth
+
             return True
         except Exception:
             return False
@@ -304,12 +308,14 @@ class ChatEngine:
                     'user': msg.content,
                     'bot': self._generate_response(msg.content, "", "")
                 })
-            
-            self.personality.relationship_level = min(
-                1.0,
-                0.3 + (analysis['total_messages'] / 100) * 0.7
-            )
-            
+
+            # 根据导入的截图聊天记录设置关系深度（用户数据优先）
+            msg_count = analysis['total_messages']
+            imported_depth = min(1.0, 0.3 + (msg_count / 100) * 0.7)
+            self.humanized_engine.relationship_depth = imported_depth
+            self.humanized_engine.total_interactions = msg_count
+            self.personality.relationship_level = imported_depth
+
             return True
         
         except Exception as e:
@@ -342,24 +348,30 @@ class ChatEngine:
         character = self.character_manager.load_preset(preset_name)
         if character:
             self.current_character = character
+            # 同步到真人化引擎
+            self.humanized_engine.character = character
             return True
         return False
-    
+
     def create_character(self) -> bool:
         """交互式创建人设"""
         try:
             character = self.character_manager.interactive_create_character()
             self.current_character = character
+            # 同步到真人化引擎
+            self.humanized_engine.character = character
             return True
         except Exception as e:
             print(f"创建人设失败: {e}")
             return False
-    
+
     def apply_character_template(self, template_name: str) -> bool:
         """应用人设模板"""
         character = apply_preset_template(self.character_manager, template_name)
         if character:
             self.current_character = character
+            # 同步到真人化引擎
+            self.humanized_engine.character = character
             return True
         return False
     
