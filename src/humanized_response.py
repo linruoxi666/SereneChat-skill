@@ -4,6 +4,7 @@ import time
 import re
 from typing import List, Dict, Any, Optional, Tuple
 from enum import Enum
+from .internet_thinking import InternetThinking
 
 class EmotionalState(Enum):
     """情绪状态"""
@@ -53,6 +54,9 @@ class HumanizedResponseEngine:
         self.internal_thoughts = []
         self.max_thoughts = 10
 
+        # 联网思考模块
+        self.internet_thinking = InternetThinking()
+
         # 语义理解词库
         self._init_semantic_library()
 
@@ -61,17 +65,22 @@ class HumanizedResponseEngine:
 
         # 情感词映射
         self.emotion_keywords = {
-            '开心': ['开心', '高兴', '快乐', '爽', '棒', '好', '不错', '耶', '哈哈'],
-            '难过': ['难过', '伤心', '哭', '疼', '痛', '失望', '郁闷'],
-            '累': ['累', '疲惫', '困', '倦', '乏', '辛苦', '忙'],
-            '想': ['想', '念', '思念', '惦记'],
-            '爱': ['爱', '喜欢', '心动', '在乎'],
-            '生气': ['生气', '烦', '讨厌', '怒', '火', '气'],
-            '担心': ['担心', '怕', '焦虑', '紧张', '不安'],
-            '无聊': ['无聊', '没事', '闲', '空虚'],
-            '晚安': ['晚安', '睡', '困', '休息'],
-            '早安': ['早', '起床', '醒了'],
+            '开心': ['开心', '高兴', '快乐', '爽', '棒', '不错', '耶', '哈哈', '嘻嘻', '呵呵'],
+            '难过': ['难过', '伤心', '哭', '疼', '痛', '失望', '郁闷', '难受', '不好', '不开心', '不爽', '低落', '压抑'],
+            '累': ['累', '疲惫', '困', '倦', '乏', '辛苦', '忙', '操劳', '精疲力竭'],
+            '想': ['想', '念', '思念', '惦记', '挂念'],
+            '爱': ['爱', '喜欢', '心动', '在乎', '中意', '钟情'],
+            '生气': ['生气', '烦', '讨厌', '怒', '火', '气', '愤怒', '恼火', '暴躁', '气愤'],
+            '担心': ['担心', '怕', '焦虑', '紧张', '不安', '忐忑', '慌', '牵挂'],
+            '无聊': ['无聊', '没事', '闲', '空虚', '没意思', '乏味'],
+            '晚安': ['晚安', '睡', '困', '休息', '睡了', '睡觉'],
+            '早安': ['早', '起床', '醒了', '早安', '早上好'],
         }
+
+        # 否定前缀 - 用于检测"不+正面词"的否定表达
+        self.negation_prefixes = ['不', '没', '别', '勿', '无', '非']
+        # 否定后缀
+        self.negation_suffixes = ['死了', '死了', '透顶', '至极', '死了']
 
         # 回复核心词库（按情感分类）
         self.response_cores = {
@@ -229,6 +238,27 @@ class HumanizedResponseEngine:
                 # 匹配多个关键词有加成
                 scores[emotion] = score + matched_count * 0.5
 
+        # 检测否定表达（如"心情不好"、"不开心"、"不好"）
+        # 如果包含否定前缀+正面词，应识别为负面情感
+        negation_detected = False
+        for prefix in self.negation_prefixes:
+            if prefix in user_input_lower:
+                # 检查否定前缀后面是否跟着正面词
+                for pos_word in ['开心', '高兴', '快乐', '好', '棒', '不错']:
+                    if prefix + pos_word in user_input_lower:
+                        negation_detected = True
+                        break
+                if negation_detected:
+                    break
+
+        # 如果检测到否定表达，强制将"开心"的得分转移给"难过"
+        if negation_detected and '开心' in scores:
+            happy_score = scores.pop('开心')
+            if '难过' in scores:
+                scores['难过'] += happy_score
+            else:
+                scores['难过'] = happy_score
+
         if not scores:
             return 'default', 0.5
 
@@ -365,6 +395,7 @@ class HumanizedResponseEngine:
         """
         生成真人化回复
         基于语义理解动态生成，而非死板模板
+        集成联网思考，让回复更智能
         """
         # 更新状态
         self.update_relationship()
@@ -373,8 +404,15 @@ class HumanizedResponseEngine:
         # 语义分析
         emotion_type, intensity = self._analyze_semantic(user_input)
 
+        # 联网思考 - 分析话题并获取知识
+        internet_thought = self.internet_thinking.generate_thinking(user_input, emotion_type)
+        if internet_thought:
+            self.add_internal_thought(f"[联网] {internet_thought}")
+
         # 生成内心独白
         internal_monologue = self._generate_internal_monologue(user_input, emotion_type)
+        if internet_thought:
+            internal_monologue = f"{internal_monologue}；{internet_thought}"
         self.add_internal_thought(internal_monologue)
 
         # 选择回复风格
@@ -382,6 +420,9 @@ class HumanizedResponseEngine:
 
         # 生成核心回复
         response = self._generate_core_response(emotion_type, style)
+
+        # 联网思考丰富回复 - 将知识自然融入
+        response = self.internet_thinking.enrich_response(response, user_input, emotion_type)
 
         # 添加记忆引用
         memory_ref = self._get_memory_reference()

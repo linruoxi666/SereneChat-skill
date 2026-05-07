@@ -1,16 +1,26 @@
 {
   "facts": [],
-  "emotions": [],
+  "emotions": [
+    {
+      "content": "我好开心",
+      "timestamp": "2026-05-08T00:45:48.285550",
+      "importance": 1.0,
+      "category": "emotions",
+      "context": "用户: 今天好累\n小龙虾: 今天有点累那个...辛苦了想休息\n用户: 晚安\n小龙虾: 今天有点累晚安哦\n用户: 我好开心\n小龙虾: 嘻嘻开心就好",
+      "access_count": 112,
+      "last_accessed": "2026-05-08T01:57:07.548656"
+    }
+  ],
   "preferences": [],
   "events": [
     {
       "content": "今天好累",
       "timestamp": "2026-05-08T00:15:47.424421",
-      "importance": 0.6,
+      "importance": 1.0,
       "category": "events",
       "context": "用户: 今天好累\n小龙虾: 累了就好好歇会儿，我陪着你\n用户: 晚安\n小龙虾: 晚安亲爱的，做个好梦，梦里有我哦\n用户: 吃饭了吗\n小龙虾: 我刚吃过呢，你吃饭了吗小可爱？",
-      "access_count": 1,
-      "last_accessed": "2026-05-08T00:15:47.424421"
+      "access_count": 139,
+      "last_accessed": "2026-05-08T01:57:07.549506"
     }
   ],
   "habits": [],
