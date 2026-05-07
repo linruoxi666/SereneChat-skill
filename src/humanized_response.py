@@ -281,36 +281,28 @@ class HumanizedResponseEngine:
         return result
 
     def _get_relationship_aware_response(self, base_response: str, user_input: str) -> str:
-        """根据关系深度调整回复 - 控制概率避免过度修改"""
+        """根据关系深度调整回复 - 极低概率添加后缀"""
         stage = self.get_relationship_stage()
 
-        if stage == 'stranger':
-            # 陌生人：礼貌、保持距离
+        # 只在基础回复较短时添加后缀，避免语义混乱
+        if len(base_response) > 8:
             return base_response
 
-        elif stage == 'acquaintance':
-            # 认识：稍微亲近（低概率添加后缀）
-            if random.random() < 0.15:
-                return base_response + random.choice(['，最近怎么样'])
+        if stage == 'acquaintance':
+            if random.random() < 0.1:
+                return base_response + '，最近怎么样'
 
         elif stage == 'friend':
-            # 朋友：自然、会开玩笑（低概率添加后缀）
-            if random.random() < 0.2:
+            if random.random() < 0.12:
                 return base_response + random.choice(['，哈哈', '，你呢'])
 
         elif stage == 'close':
-            # 亲密：会撒娇、会关心（低概率添加后缀）
-            if random.random() < 0.25:
+            if random.random() < 0.15:
                 return base_response + random.choice(['，想你', '，笨蛋'])
 
         elif stage == 'intimate':
-            # 恋人：黏人、深情（低概率添加后缀）
-            if random.random() < 0.3:
-                return base_response + random.choice([
-                    '，我爱你',
-                    '，别离开我',
-                    '，抱抱'
-                ])
+            if random.random() < 0.18:
+                return base_response + random.choice(['，抱抱', '，想你'])
 
         return base_response
 
@@ -331,18 +323,15 @@ class HumanizedResponseEngine:
         style = self._select_response_style()
 
         # 获取基础回复
-        base_response = self._generate_base_response(user_input, style)
+        response = self._generate_base_response(user_input, style)
 
         # 添加记忆引用
         memory_ref = self._get_memory_reference()
         if memory_ref:
-            base_response = memory_ref + base_response
+            response = memory_ref + response
 
         # 应用关系深度
-        response = self._get_relationship_aware_response(base_response, user_input)
-
-        # 应用情绪语调
-        response = self._apply_emotion_tone(response)
+        response = self._get_relationship_aware_response(response, user_input)
 
         # 添加人类不完美特征
         response = self._add_human_imperfections(response, style)
@@ -427,7 +416,7 @@ class HumanizedResponseEngine:
 
         elif any(word in user_input for word in ['累', '辛苦', '忙']):
             responses = {
-                ResponseStyle.DIRECT: ["辛苦了", "注意休息"],
+                ResponseStyle.DIRECT: ["辛苦了", "注意休息", "累了吧"],
                 ResponseStyle.HESITANT: ["那个...辛苦了", "你还好吗"],
                 ResponseStyle.TEASE: ["谁让你这么拼", "活该，谁让你不休息"],
                 ResponseStyle.CLINGY: ["别太累了，我会心疼", "抱抱你"],
