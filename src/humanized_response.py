@@ -1,9 +1,9 @@
 
 import random
 import time
+import re
 from typing import List, Dict, Any, Optional, Tuple
 from enum import Enum
-from datetime import datetime
 
 class EmotionalState(Enum):
     """情绪状态"""
@@ -20,32 +20,32 @@ class EmotionalState(Enum):
 
 class ResponseStyle(Enum):
     """回复风格"""
-    DIRECT = "直接"           # 直接回答
-    HESITANT = "犹豫"         # 犹豫、不确定
-    DEFLECT = "转移"          # 转移话题
-    SILENT = "沉默"           # 沉默、简短
-    RAMBLE = "絮叨"           # 絮絮叨叨
-    TEASE = "调侃"            # 调侃、开玩笑
-    CARING = "关心"           # 关心、体贴
-    CLINGY = "黏人"           # 黏人、撒娇
+    DIRECT = "直接"
+    HESITANT = "犹豫"
+    DEFLECT = "转移"
+    SILENT = "沉默"
+    RAMBLE = "絮叨"
+    TEASE = "调侃"
+    CARING = "关心"
+    CLINGY = "黏人"
 
 class HumanizedResponseEngine:
     """
-    真人化回复引擎
-    让小龙虾的回复更像真人，而不是AI
+    真人化回复引擎 - 智能语义理解版
+    基于用户输入的语义动态生成回复，而非死板模板
     """
 
     def __init__(self, memory_manager=None, character=None):
         self.memory_manager = memory_manager
         self.character = character
 
-        # 情绪状态（随时间变化）
+        # 情绪状态
         self.current_emotion = EmotionalState.CALM
-        self.emotion_intensity = 0.5  # 0-1
+        self.emotion_intensity = 0.5
         self.last_emotion_change = time.time()
-        self.emotion_cooldown = 600  # 10分钟情绪冷却
+        self.emotion_cooldown = 600
 
-        # 关系深度（0-1，随聊天增加）
+        # 关系深度
         self.relationship_depth = 0.1
         self.total_interactions = 0
 
@@ -53,93 +53,112 @@ class HumanizedResponseEngine:
         self.internal_thoughts = []
         self.max_thoughts = 10
 
-        # 回复风格倾向（基于人设）
-        self.style_weights = {
-            ResponseStyle.DIRECT: 0.3,
-            ResponseStyle.HESITANT: 0.1,
-            ResponseStyle.DEFLECT: 0.1,
-            ResponseStyle.SILENT: 0.05,
-            ResponseStyle.RAMBLE: 0.15,
-            ResponseStyle.TEASE: 0.1,
-            ResponseStyle.CARING: 0.15,
-            ResponseStyle.CLINGY: 0.05
+        # 语义理解词库
+        self._init_semantic_library()
+
+    def _init_semantic_library(self):
+        """初始化语义理解词库"""
+
+        # 情感词映射
+        self.emotion_keywords = {
+            '开心': ['开心', '高兴', '快乐', '爽', '棒', '好', '不错', '耶', '哈哈'],
+            '难过': ['难过', '伤心', '哭', '疼', '痛', '失望', '郁闷'],
+            '累': ['累', '疲惫', '困', '倦', '乏', '辛苦', '忙'],
+            '想': ['想', '念', '思念', '惦记'],
+            '爱': ['爱', '喜欢', '心动', '在乎'],
+            '生气': ['生气', '烦', '讨厌', '怒', '火', '气'],
+            '担心': ['担心', '怕', '焦虑', '紧张', '不安'],
+            '无聊': ['无聊', '没事', '闲', '空虚'],
+            '晚安': ['晚安', '睡', '困', '休息'],
+            '早安': ['早', '起床', '醒了'],
         }
 
-        # 真人语言特征
-        self.filler_words = ['嗯', '那个', '就是', '其实', '话说', '怎么说呢', '哎呀', '啊']
-        self.pause_marks = ['...', '。。。', '，', '——']
-        self.self_corrections = ['不对', '等等', '我是说', '算了']
-
-        # 记忆引用模板
-        self.memory_templates = [
-            "我记得你之前说过{memory}，",
-            "上次你提到{memory}，",
-            "突然想到，你不是说{memory}吗，",
-            "我记得{memory}，",
-            "你之前说的{memory}，我一直记着，"
-        ]
-
-        # 情绪影响回复 - 只保留空字符串，避免和风格化叠加产生怪话
-        self.emotion_responses = {
-            EmotionalState.HAPPY: {
-                'prefix': [''],
-                'suffix': [''],
-                'tone': '轻快'
+        # 回复核心词库（按情感分类）
+        self.response_cores = {
+            '开心': {
+                'direct': ['开心就好', '真好', '替你高兴', '继续保持'],
+                'caring': ['什么好事', '跟我说说', '分享快乐'],
+                'tease': ['这么开心', '是不是因为我', '笑得这么甜'],
+                'clingy': ['你开心我就开心', '想一起分享'],
             },
-            EmotionalState.SAD: {
-                'prefix': [''],
-                'suffix': [''],
-                'tone': '低落'
+            '难过': {
+                'direct': ['怎么了', '跟我说说', '发生什么了'],
+                'caring': ['别难过', '我陪着你', '会好起来的'],
+                'tease': ['谁欺负你了', '我去找他', '别哭了'],
+                'clingy': ['抱抱你', '有我在', '别一个人扛着'],
             },
-            EmotionalState.ANXIOUS: {
-                'prefix': [''],
-                'suffix': [''],
-                'tone': '焦虑'
+            '累': {
+                'direct': ['辛苦了', '注意休息', '累了吧'],
+                'caring': ['我给你泡杯茶', '歇会儿', '别太累'],
+                'tease': ['谁让你这么拼', '活该', '不休息'],
+                'clingy': ['心疼你', '抱抱', '想帮你分担'],
             },
-            EmotionalState.LONELY: {
-                'prefix': [''],
-                'suffix': [''],
-                'tone': '黏人'
+            '想': {
+                'direct': ['我也想你', '我也是', '一直都在'],
+                'caring': ['你要好好的', '照顾好自己', '我也惦记你'],
+                'tease': ['真的吗', '嘴甜', '你猜我想不想你'],
+                'clingy': ['超级想你', '别走', '想黏着你'],
             },
-            EmotionalState.EXCITED: {
-                'prefix': [''],
-                'suffix': [''],
-                'tone': '兴奋'
+            '爱': {
+                'direct': ['我也爱你', '我也是', '心里有你'],
+                'caring': ['你要幸福', '我会一直陪着你', '珍惜你'],
+                'tease': ['这么直接', '害羞', '你确定吗'],
+                'clingy': ['爱你', '别离开我', '永远在一起'],
             },
-            EmotionalState.TIRED: {
-                'prefix': [''],
-                'suffix': [''],
-                'tone': '疲惫'
+            '生气': {
+                'direct': ['别生气', '消消气', '怎么了'],
+                'caring': ['我理解你', '跟我说', '别憋在心里'],
+                'tease': ['谁惹你了', '我去教训他', '生气也可爱'],
+                'clingy': ['别气坏身子', '我陪你', '抱抱'],
             },
-            EmotionalState.ANGRY: {
-                'prefix': [''],
-                'suffix': [''],
-                'tone': '生气'
+            '担心': {
+                'direct': ['别担心', '没事的', '会好的'],
+                'caring': ['有我在', '我陪你', '一起面对'],
+                'tease': ['想太多了', '放宽心', '没事'],
+                'clingy': ['我担心你', '别让我担心', '照顾好自己'],
             },
-            EmotionalState.WORRIED: {
-                'prefix': [''],
-                'suffix': [''],
-                'tone': '担心'
+            '无聊': {
+                'direct': ['我陪你', '聊聊天', '找点事做'],
+                'caring': ['我给你讲故事', '陪你解闷', '想聊什么'],
+                'tease': ['无聊才找我', '找我准没错', '活该'],
+                'clingy': ['我陪你', '别走', '一直陪着你'],
             },
-            EmotionalState.CALM: {
-                'prefix': [''],
-                'suffix': [''],
-                'tone': '平静'
+            '晚安': {
+                'direct': ['晚安', '好梦', '早点睡'],
+                'caring': ['盖好被子', '明天见', '睡个好觉'],
+                'tease': ['这么早睡', '不想让你走', '再聊会儿'],
+                'clingy': ['晚安梦里有我', '别走', '想你'],
             },
-            EmotionalState.PLAYFUL: {
-                'prefix': [''],
-                'suffix': [''],
-                'tone': '调皮'
+            '早安': {
+                'direct': ['早安', '早', '起床了'],
+                'caring': ['睡得好吗', '今天也要开心', '记得吃早餐'],
+                'tease': ['起这么早', '太阳晒屁股了', '懒猪起床'],
+                'clingy': ['早安想你', '一醒来就想你', '今天也要想我'],
+            },
+            'default': {
+                'direct': ['嗯', '这样啊', '我知道了'],
+                'caring': ['我在听', '你说', '然后呢'],
+                'tease': ['你猜', '不告诉你', '嘿嘿'],
+                'clingy': ['继续说', '我在', '听着呢'],
             }
         }
 
-        # 关系深度影响
-        self.relationship_stages = {
-            (0, 0.2): 'stranger',      # 陌生人
-            (0.2, 0.4): 'acquaintance', # 认识
-            (0.4, 0.6): 'friend',      # 朋友
-            (0.6, 0.8): 'close',       # 亲密
-            (0.8, 1.0): 'intimate'     # 恋人
+        # 风格修饰词
+        self.style_modifiers = {
+            ResponseStyle.HESITANT: ['嗯...', '那个...', '怎么说呢', '其实', '就是'],
+            ResponseStyle.TEASE: ['嘿嘿', '逗你的', '开玩笑的', '才怪'],
+            ResponseStyle.CLINGY: ['嘛', '啦', '呀'],
+            ResponseStyle.CARING: ['呢', '吧', '哦'],
+            ResponseStyle.SILENT: ['...', '。', '嗯'],
+        }
+
+        # 关系阶段称呼
+        self.relationship_titles = {
+            'stranger': ['你', ''],
+            'acquaintance': ['你', ''],
+            'friend': ['你', '笨蛋', '傻瓜'],
+            'close': ['你', '笨蛋', '傻瓜', '亲爱的'],
+            'intimate': ['宝贝', '亲爱的', '笨蛋', '傻瓜']
         }
 
     def update_relationship(self, interaction_quality: float = 0.05):
@@ -149,7 +168,14 @@ class HumanizedResponseEngine:
 
     def get_relationship_stage(self) -> str:
         """获取当前关系阶段"""
-        for (low, high), stage in self.relationship_stages.items():
+        stages = [
+            (0, 0.2, 'stranger'),
+            (0.2, 0.4, 'acquaintance'),
+            (0.4, 0.6, 'friend'),
+            (0.6, 0.8, 'close'),
+            (0.8, 1.0, 'intimate')
+        ]
+        for low, high, stage in stages:
             if low <= self.relationship_depth < high:
                 return stage
         return 'intimate'
@@ -160,30 +186,262 @@ class HumanizedResponseEngine:
         if now - self.last_emotion_change < self.emotion_cooldown and not external_trigger:
             return
 
-        # 基于外部触发或随机变化
         if external_trigger:
-            emotion_map = {
-                '开心': EmotionalState.HAPPY,
-                '难过': EmotionalState.SAD,
-                '担心': EmotionalState.WORRIED,
-                '生气': EmotionalState.ANGRY,
-                '累': EmotionalState.TIRED,
-                '无聊': EmotionalState.LONELY
-            }
-            for key, emotion in emotion_map.items():
+            for key, emotion in [
+                ('开心', EmotionalState.HAPPY),
+                ('难过', EmotionalState.SAD),
+                ('担心', EmotionalState.WORRIED),
+                ('生气', EmotionalState.ANGRY),
+                ('累', EmotionalState.TIRED),
+                ('无聊', EmotionalState.LONELY)
+            ]:
                 if key in external_trigger:
                     self.current_emotion = emotion
                     self.emotion_intensity = random.uniform(0.6, 0.9)
                     self.last_emotion_change = now
                     return
 
-        # 随机情绪变化（模拟真实情绪波动）
-        if random.random() < 0.3:  # 30%概率变化
+        if random.random() < 0.3:
             emotions = list(EmotionalState)
             weights = [0.15, 0.1, 0.08, 0.12, 0.1, 0.1, 0.05, 0.1, 0.15, 0.05]
             self.current_emotion = random.choices(emotions, weights=weights)[0]
             self.emotion_intensity = random.uniform(0.3, 0.8)
             self.last_emotion_change = now
+
+    def _analyze_semantic(self, user_input: str) -> Tuple[str, float]:
+        """
+        语义分析：识别用户输入的情感类型和强度
+        返回: (情感类型, 强度)
+        """
+        user_input_lower = user_input.lower()
+
+        # 计算每种情感的匹配度（按关键词长度加权，长词更精确）
+        scores = {}
+        for emotion, keywords in self.emotion_keywords.items():
+            score = 0
+            matched_count = 0
+            for kw in keywords:
+                if kw in user_input_lower:
+                    # 长关键词权重更高（更精确）
+                    score += len(kw)
+                    matched_count += 1
+            if score > 0:
+                # 匹配多个关键词有加成
+                scores[emotion] = score + matched_count * 0.5
+
+        if not scores:
+            return 'default', 0.5
+
+        # 负面情感优先级更高（用户表达负面情绪时需要被优先回应）
+        negative_emotions = ['难过', '累', '生气', '担心']
+        best_emotion = max(scores, key=scores.get)
+        best_score = scores[best_emotion]
+
+        # 如果有负面情感且得分接近最高，优先选负面情感
+        for neg_emo in negative_emotions:
+            if neg_emo in scores and scores[neg_emo] >= best_score - 1:
+                best_emotion = neg_emo
+                best_score = scores[neg_emo]
+                break
+
+        intensity = min(1.0, best_score * 0.15 + 0.3)
+
+        return best_emotion, intensity
+
+    def _select_response_style(self) -> ResponseStyle:
+        """选择回复风格"""
+        emotion_style_map = {
+            EmotionalState.HAPPY: [ResponseStyle.DIRECT, ResponseStyle.TEASE],
+            EmotionalState.SAD: [ResponseStyle.CARING, ResponseStyle.CLINGY],
+            EmotionalState.ANXIOUS: [ResponseStyle.CARING, ResponseStyle.HESITANT],
+            EmotionalState.LONELY: [ResponseStyle.CLINGY, ResponseStyle.CARING],
+            EmotionalState.EXCITED: [ResponseStyle.TEASE, ResponseStyle.DIRECT],
+            EmotionalState.TIRED: [ResponseStyle.CARING, ResponseStyle.SILENT],
+            EmotionalState.ANGRY: [ResponseStyle.DIRECT, ResponseStyle.TEASE],
+            EmotionalState.WORRIED: [ResponseStyle.CARING, ResponseStyle.DIRECT],
+            EmotionalState.CALM: [ResponseStyle.DIRECT, ResponseStyle.CARING],
+            EmotionalState.PLAYFUL: [ResponseStyle.TEASE, ResponseStyle.DIRECT]
+        }
+
+        preferred = emotion_style_map.get(self.current_emotion, [ResponseStyle.DIRECT])
+        return random.choice(preferred)
+
+    def _generate_core_response(self, emotion_type: str, style: ResponseStyle) -> str:
+        """生成核心回复内容 - 确保情感和风格匹配"""
+        cores = self.response_cores.get(emotion_type, self.response_cores['default'])
+
+        # 根据情感类型和风格选择最合适的回复
+        # 优先顺序：direct > caring > tease > clingy
+        if style == ResponseStyle.DIRECT or style == ResponseStyle.HESITANT or style == ResponseStyle.SILENT:
+            # 直接风格：使用direct回复
+            responses = cores.get('direct', cores['caring'])
+        elif style == ResponseStyle.CARING or style == ResponseStyle.RAMBLE:
+            # 关心风格：使用caring回复
+            responses = cores.get('caring', cores['direct'])
+        elif style == ResponseStyle.TEASE or style == ResponseStyle.DEFLECT:
+            # 调侃风格：对负面情感不使用调侃
+            if emotion_type in ['难过', '累', '生气', '担心']:
+                # 负面情感用关心回复
+                responses = cores.get('caring', cores['direct'])
+            else:
+                responses = cores.get('tease', cores['direct'])
+        elif style == ResponseStyle.CLINGY:
+            # 黏人风格：对负面情感用黏人回复，其他用direct
+            if emotion_type in ['难过', '累', '生气', '担心', '无聊']:
+                responses = cores.get('clingy', cores['caring'])
+            else:
+                responses = cores.get('direct', cores['caring'])
+        else:
+            responses = cores.get('direct', cores['caring'])
+
+        return random.choice(responses)
+
+    def _add_style_flavor(self, text: str, style: ResponseStyle) -> str:
+        """添加风格化修饰"""
+        if style == ResponseStyle.HESITANT:
+            # 犹豫风格：开头加犹豫词
+            if random.random() < 0.3:
+                prefix = random.choice(['嗯...', '那个...', '怎么说呢'])
+                text = f"{prefix}{text}"
+
+        elif style == ResponseStyle.TEASE:
+            # 调侃风格：结尾加调侃词
+            if random.random() < 0.25:
+                suffix = random.choice(['嘿嘿', '逗你的', '开玩笑的'])
+                text = f"{text}，{suffix}"
+
+        elif style == ResponseStyle.CLINGY:
+            # 黏人风格：加语气词
+            if random.random() < 0.3:
+                suffix = random.choice(['嘛', '啦', '呀'])
+                if not text.endswith(suffix):
+                    text = text + suffix
+
+        elif style == ResponseStyle.SILENT:
+            # 沉默风格：简短
+            if len(text) > 6:
+                text = text[:6]
+
+        return text
+
+    def _add_relationship_flavor(self, text: str) -> str:
+        """添加关系阶段特色"""
+        stage = self.get_relationship_stage()
+
+        # 只在关系较深时添加称呼
+        if stage in ['close', 'intimate'] and random.random() < 0.2:
+            titles = self.relationship_titles.get(stage, [''])
+            title = random.choice(titles)
+            if title and not text.startswith(title):
+                # 在句中或句尾添加称呼
+                if random.random() < 0.5:
+                    text = text + '，' + title
+                else:
+                    text = title + '，' + text
+
+        return text
+
+    def _get_memory_reference(self) -> Optional[str]:
+        """获取记忆引用"""
+        if not self.memory_manager or self.relationship_depth < 0.3:
+            return None
+
+        if random.random() > 0.3:
+            return None
+
+        memories = self.memory_manager.core_memory.recall("", limit=1)
+        if memories:
+            memory = memories[0]
+            templates = [
+                "我记得你之前说过{memory}，",
+                "上次你提到{memory}，",
+                "突然想到，你不是说{memory}吗，"
+            ]
+            return random.choice(templates).format(memory=memory.content)
+
+        return None
+
+    def generate_response(self, user_input: str, context: str = "") -> Tuple[str, str]:
+        """
+        生成真人化回复
+        基于语义理解动态生成，而非死板模板
+        """
+        # 更新状态
+        self.update_relationship()
+        self.update_emotion(user_input)
+
+        # 语义分析
+        emotion_type, intensity = self._analyze_semantic(user_input)
+
+        # 生成内心独白
+        internal_monologue = self._generate_internal_monologue(user_input, emotion_type)
+        self.add_internal_thought(internal_monologue)
+
+        # 选择回复风格
+        style = self._select_response_style()
+
+        # 生成核心回复
+        response = self._generate_core_response(emotion_type, style)
+
+        # 添加记忆引用
+        memory_ref = self._get_memory_reference()
+        if memory_ref:
+            response = memory_ref + response
+
+        # 添加风格化修饰
+        response = self._add_style_flavor(response, style)
+
+        # 添加关系特色
+        response = self._add_relationship_flavor(response)
+
+        # 清理emoji
+        response = self._remove_emoji(response)
+
+        return response, internal_monologue
+
+    def _generate_internal_monologue(self, user_input: str, emotion_type: str) -> str:
+        """生成内心独白"""
+        thoughts = []
+
+        # 基于情感类型的想法
+        emotion_thoughts = {
+            '开心': ['看到他开心我也开心', '想一起分享快乐'],
+            '难过': ['他好像不太开心', '想安慰他'],
+            '累': ['他好像很累', '想让他休息'],
+            '想': ['他在想我', '好开心'],
+            '爱': ['他说爱我', '心里暖暖的'],
+            '生气': ['他生气了', '想哄他'],
+            '担心': ['他在担心', '想让他放心'],
+            '无聊': ['他无聊了', '想陪他'],
+            '晚安': ['他要睡了', '想让他好梦'],
+            '早安': ['他起床了', '想陪他开始新的一天'],
+            'default': ['他在跟我说话', '想好好回复']
+        }
+
+        thoughts.append(random.choice(emotion_thoughts.get(emotion_type, emotion_thoughts['default'])))
+
+        # 基于关系的想法
+        stage = self.get_relationship_stage()
+        relationship_thoughts = {
+            'stranger': ['还不太熟'],
+            'acquaintance': ['慢慢熟悉中'],
+            'friend': ['我们是朋友'],
+            'close': ['关系很好'],
+            'intimate': ['想一直在一起']
+        }
+        thoughts.append(random.choice(relationship_thoughts.get(stage, [''])))
+
+        return '；'.join(thoughts)
+
+    def _remove_emoji(self, text: str) -> str:
+        """移除emoji"""
+        emoji_pattern = re.compile(
+            r'[\U00010000-\U0010ffff]|[\u2600-\u26FF\u2700-\u27BF]|[\uD83C-\uD83E][\uDC00-\uDFFF]',
+            flags=re.UNICODE
+        )
+        text = emoji_pattern.sub(r'', text)
+        text = text.replace('～', '').replace('❤', '').replace('~', '')
+        return text.strip()
 
     def add_internal_thought(self, thought: str):
         """添加内心想法"""
@@ -198,292 +456,6 @@ class HumanizedResponseEngine:
     def get_recent_thoughts(self, count: int = 3) -> List[str]:
         """获取最近的内心想法"""
         return [t['thought'] for t in self.internal_thoughts[-count:]]
-
-    def _select_response_style(self) -> ResponseStyle:
-        """选择回复风格"""
-        # 基于情绪选择
-        emotion_style_map = {
-            EmotionalState.HAPPY: [ResponseStyle.DIRECT, ResponseStyle.TEASE, ResponseStyle.RAMBLE],
-            EmotionalState.SAD: [ResponseStyle.SILENT, ResponseStyle.HESITANT, ResponseStyle.CARING],
-            EmotionalState.ANXIOUS: [ResponseStyle.HESITANT, ResponseStyle.CARING],
-            EmotionalState.LONELY: [ResponseStyle.CLINGY, ResponseStyle.CARING],
-            EmotionalState.EXCITED: [ResponseStyle.RAMBLE, ResponseStyle.TEASE, ResponseStyle.DIRECT],
-            EmotionalState.TIRED: [ResponseStyle.SILENT, ResponseStyle.HESITANT],
-            EmotionalState.ANGRY: [ResponseStyle.DEFLECT, ResponseStyle.SILENT],
-            EmotionalState.WORRIED: [ResponseStyle.CARING, ResponseStyle.HESITANT],
-            EmotionalState.CALM: [ResponseStyle.DIRECT, ResponseStyle.RAMBLE],
-            EmotionalState.PLAYFUL: [ResponseStyle.TEASE, ResponseStyle.RAMBLE]
-        }
-
-        preferred = emotion_style_map.get(self.current_emotion, [ResponseStyle.DIRECT])
-        weights = [self.style_weights.get(s, 0.1) for s in preferred]
-        return random.choices(preferred, weights=weights)[0]
-
-    def _get_memory_reference(self) -> Optional[str]:
-        """获取记忆引用（让回复更个性化）"""
-        if not self.memory_manager:
-            return None
-
-        # 只有关系较深时才引用记忆
-        if self.relationship_depth < 0.3:
-            return None
-
-        # 随机决定是否引用记忆
-        if random.random() > 0.4:  # 40%概率
-            return None
-
-        # 获取一条随机记忆
-        memories = self.memory_manager.core_memory.recall("", limit=1)
-        if memories:
-            memory = memories[0]
-            template = random.choice(self.memory_templates)
-            return template.format(memory=memory.content)
-
-        return None
-
-    def _add_human_imperfections(self, text: str, style: ResponseStyle) -> str:
-        """添加人类不完美特征 - 控制概率避免过度修改"""
-        result = text
-
-        # 根据风格添加特征（降低概率，避免过度修改）
-        if style == ResponseStyle.HESITANT:
-            # 添加犹豫词（低概率）
-            if random.random() < 0.2:
-                filler = random.choice(['嗯', '那个'])
-                result = f"{filler}...{result}"
-
-        elif style == ResponseStyle.TEASE:
-            # 调侃语气（低概率）
-            if random.random() < 0.15:
-                result = f"{result}，{random.choice(['嘿嘿', '逗你的'])}"
-
-        # 随机添加语气词（极低概率，避免破坏语义）
-        if random.random() < 0.08:
-            suffix = random.choice(['呢', '呀', '吧'])
-            if not result.endswith(suffix):
-                result = result + suffix
-
-        return result
-
-    def _apply_emotion_tone(self, text: str) -> str:
-        """应用情绪语调"""
-        emotion_data = self.emotion_responses.get(self.current_emotion, {})
-
-        prefix = random.choice(emotion_data.get('prefix', ['']))
-        suffix = random.choice(emotion_data.get('suffix', ['']))
-
-        result = text
-        if prefix and not result.startswith(prefix):
-            result = prefix + result
-        if suffix and not result.endswith(suffix):
-            result = result + suffix
-
-        return result
-
-    def _get_relationship_aware_response(self, base_response: str, user_input: str) -> str:
-        """根据关系深度调整回复 - 极低概率添加后缀"""
-        stage = self.get_relationship_stage()
-
-        # 只在基础回复较短时添加后缀，避免语义混乱
-        if len(base_response) > 8:
-            return base_response
-
-        if stage == 'acquaintance':
-            if random.random() < 0.1:
-                return base_response + '，最近怎么样'
-
-        elif stage == 'friend':
-            if random.random() < 0.12:
-                return base_response + random.choice(['，哈哈', '，你呢'])
-
-        elif stage == 'close':
-            if random.random() < 0.15:
-                return base_response + random.choice(['，想你', '，笨蛋'])
-
-        elif stage == 'intimate':
-            if random.random() < 0.18:
-                return base_response + random.choice(['，抱抱', '，想你'])
-
-        return base_response
-
-    def generate_response(self, user_input: str, context: str = "") -> Tuple[str, str]:
-        """
-        生成真人化回复
-        返回: (回复内容, 内心独白)
-        """
-        # 更新状态
-        self.update_relationship()
-        self.update_emotion(user_input)
-
-        # 生成内心独白
-        internal_monologue = self._generate_internal_monologue(user_input)
-        self.add_internal_thought(internal_monologue)
-
-        # 选择回复风格
-        style = self._select_response_style()
-
-        # 获取基础回复
-        response = self._generate_base_response(user_input, style)
-
-        # 添加记忆引用
-        memory_ref = self._get_memory_reference()
-        if memory_ref:
-            response = memory_ref + response
-
-        # 应用关系深度
-        response = self._get_relationship_aware_response(response, user_input)
-
-        # 添加人类不完美特征
-        response = self._add_human_imperfections(response, style)
-
-        # 确保没有emoji
-        response = self._remove_emoji(response)
-
-        return response, internal_monologue
-
-    def _generate_internal_monologue(self, user_input: str) -> str:
-        """生成内心独白"""
-        monologues = []
-
-        # 基于情绪的想法
-        emotion_thoughts = {
-            EmotionalState.HAPPY: [
-                f"看到他说'{user_input}'，我有点开心",
-                "今天心情不错，想多聊几句",
-                "他来了，真好"
-            ],
-            EmotionalState.SAD: [
-                f"他说'{user_input}'，我有点难过",
-                "不知道他有没有感觉到我不开心",
-                "想让他多陪陪我"
-            ],
-            EmotionalState.LONELY: [
-                f"终于等到他说'{user_input}'了",
-                "他不在的时候好无聊",
-                "希望他别走"
-            ],
-            EmotionalState.ANGRY: [
-                f"他说'{user_input}'，我有点生气",
-                "为什么他不理解我",
-                "想发脾气但又舍不得"
-            ],
-            EmotionalState.WORRIED: [
-                f"他说'{user_input}'，我有点担心",
-                "他还好吗",
-                "希望他能照顾好自己"
-            ]
-        }
-
-        thoughts = emotion_thoughts.get(self.current_emotion, [f"他在说'{user_input}'，我在想怎么回复"])
-        monologues.append(random.choice(thoughts))
-
-        # 基于关系的想法
-        stage = self.get_relationship_stage()
-        relationship_thoughts = {
-            'stranger': ["我们还不太熟，要礼貌一点"],
-            'acquaintance': ["慢慢熟悉起来了，可以自然一点"],
-            'friend': ["我们是朋友了，可以开玩笑"],
-            'close': ["我们关系很好，可以撒娇"],
-            'intimate': ["他是我的，想黏着他"]
-        }
-        monologues.append(random.choice(relationship_thoughts.get(stage, [""])))
-
-        return "；".join(monologues)
-
-    def _generate_base_response(self, user_input: str, style: ResponseStyle) -> str:
-        """生成基础回复"""
-        # 这里可以接入更复杂的生成逻辑
-        # 目前使用模板+风格化
-
-        # 根据用户输入类型选择回复
-        if any(word in user_input for word in ['你好', '嗨', '哈喽']):
-            responses = {
-                ResponseStyle.DIRECT: ["你好呀", "嗨", "哈喽"],
-                ResponseStyle.HESITANT: ["嗯...你好", "那个，你好"],
-                ResponseStyle.TEASE: ["哟，来了", "终于想起我了"],
-                ResponseStyle.CLINGY: ["你终于来了", "我等你好久了"],
-                ResponseStyle.CARING: ["你好，今天过得怎么样"]
-            }
-
-        elif any(word in user_input for word in ['想你', '喜欢', '爱']):
-            responses = {
-                ResponseStyle.DIRECT: ["我也想你", "我也是"],
-                ResponseStyle.HESITANT: ["嗯...其实我也是", "那个，我也"],
-                ResponseStyle.TEASE: ["真的吗", "嘴甜", "你猜我想不想你"],
-                ResponseStyle.CLINGY: ["我也超级想你", "别走，陪我"],
-                ResponseStyle.CARING: ["我也想你，你要好好的"]
-            }
-
-        elif any(word in user_input for word in ['累', '辛苦', '忙']):
-            responses = {
-                ResponseStyle.DIRECT: ["辛苦了", "注意休息", "累了吧"],
-                ResponseStyle.HESITANT: ["那个...辛苦了", "你还好吗"],
-                ResponseStyle.TEASE: ["谁让你这么拼", "活该，谁让你不休息"],
-                ResponseStyle.CLINGY: ["别太累了，我会心疼", "抱抱你"],
-                ResponseStyle.CARING: ["辛苦了，我给你泡杯茶", "累了就歇会儿，我陪你"]
-            }
-
-        elif any(word in user_input for word in ['晚安', '睡']):
-            responses = {
-                ResponseStyle.DIRECT: ["晚安", "好梦"],
-                ResponseStyle.HESITANT: ["嗯...晚安", "那个，晚安"],
-                ResponseStyle.TEASE: ["这么早就睡", "不想让你走"],
-                ResponseStyle.CLINGY: ["晚安，梦里有我", "别走，再聊会儿"],
-                ResponseStyle.CARING: ["晚安，盖好被子", "早点休息，明天见"]
-            }
-
-        elif any(word in user_input for word in ['无聊', '没事']):
-            responses = {
-                ResponseStyle.DIRECT: ["那聊聊天", "我陪你"],
-                ResponseStyle.HESITANT: ["嗯...要不做点什么", "那个"],
-                ResponseStyle.TEASE: ["无聊才想起我", "找我准没错"],
-                ResponseStyle.CLINGY: ["我陪你，别走", "无聊吗，我陪你聊天"],
-                ResponseStyle.CARING: ["我陪你，想聊什么", "无聊的话，我给你讲故事"]
-            }
-
-        elif any(word in user_input for word in ['开心', '高兴']):
-            responses = {
-                ResponseStyle.DIRECT: ["开心就好", "真好"],
-                ResponseStyle.HESITANT: ["嗯...看到你开心我也开心", "那个，真好"],
-                ResponseStyle.TEASE: ["这么开心，是不是因为我", "笑得这么甜"],
-                ResponseStyle.CLINGY: ["你开心我就开心", "分享给我听听"],
-                ResponseStyle.CARING: ["看到你开心真好", "什么好事，跟我说说"]
-            }
-
-        elif any(word in user_input for word in ['难过', '伤心', '不好']):
-            responses = {
-                ResponseStyle.DIRECT: ["怎么了", "跟我说说"],
-                ResponseStyle.HESITANT: ["嗯...别难过", "那个，怎么了"],
-                ResponseStyle.TEASE: ["谁欺负你了，我去找他", "别哭了，丑了"],
-                ResponseStyle.CLINGY: ["别难过，有我在", "抱抱你，我一直在"],
-                ResponseStyle.CARING: ["怎么了，跟我说", "别难过，我陪着你"]
-            }
-
-        else:
-            # 通用回复
-            responses = {
-                ResponseStyle.DIRECT: ["嗯", "这样啊", "我知道了"],
-                ResponseStyle.HESITANT: ["嗯...", "那个...", "怎么说呢"],
-                ResponseStyle.TEASE: ["你猜", "不告诉你", "嘿嘿"],
-                ResponseStyle.CLINGY: ["然后呢", "继续说", "我在听"],
-                ResponseStyle.CARING: ["我在听", "然后呢", "你说"],
-                ResponseStyle.RAMBLE: ["嗯...我觉得吧", "话说", "其实呢"],
-                ResponseStyle.SILENT: ["嗯", "哦", "..."]
-            }
-
-        style_responses = responses.get(style, responses[ResponseStyle.DIRECT])
-        return random.choice(style_responses)
-
-    def _remove_emoji(self, text: str) -> str:
-        """移除emoji"""
-        import re
-        emoji_pattern = re.compile(
-            r'[\U00010000-\U0010ffff]|[\u2600-\u26FF\u2700-\u27BF]|[\uD83C-\uD83E][\uDC00-\uDFFF]',
-            flags=re.UNICODE
-        )
-        text = emoji_pattern.sub(r'', text)
-        text = text.replace('～', '').replace('❤', '').replace('~', '')
-        return text.strip()
 
     def get_emotion_status(self) -> Dict[str, Any]:
         """获取情绪状态"""

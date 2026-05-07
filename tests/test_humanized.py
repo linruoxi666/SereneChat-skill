@@ -53,10 +53,11 @@ def test_response_styles():
 
     for user_input, styles in test_cases:
         print(f"\n输入: '{user_input}'")
+        emotion_type, _ = engine._analyze_semantic(user_input)
         for style in styles:
             engine.current_emotion = EmotionalState.HAPPY
-            response = engine._generate_base_response(user_input, style)
-            response = engine._add_human_imperfections(response, style)
+            response = engine._generate_core_response(emotion_type, style)
+            response = engine._add_style_flavor(response, style)
             print(f"  风格[{style.value}]: {response}")
 
     print("\n✓ 回复风格测试通过")
@@ -96,23 +97,26 @@ def test_human_imperfections():
 
     # 测试犹豫风格
     engine.current_emotion = EmotionalState.SAD
+    emotion_type, _ = engine._analyze_semantic("你好")
     for _ in range(5):
-        response = engine._generate_base_response("你好", ResponseStyle.HESITANT)
-        response = engine._add_human_imperfections(response, ResponseStyle.HESITANT)
+        response = engine._generate_core_response(emotion_type, ResponseStyle.HESITANT)
+        response = engine._add_style_flavor(response, ResponseStyle.HESITANT)
         print(f"  犹豫: {response}")
 
     # 测试调侃风格
     engine.current_emotion = EmotionalState.PLAYFUL
+    emotion_type, _ = engine._analyze_semantic("我想你了")
     for _ in range(5):
-        response = engine._generate_base_response("我想你了", ResponseStyle.TEASE)
-        response = engine._add_human_imperfections(response, ResponseStyle.TEASE)
+        response = engine._generate_core_response(emotion_type, ResponseStyle.TEASE)
+        response = engine._add_style_flavor(response, ResponseStyle.TEASE)
         print(f"  调侃: {response}")
 
-    # 测试沉默风格
+    # 测试沉默风格 - 对负面情感用关心风格
     engine.current_emotion = EmotionalState.TIRED
+    emotion_type, _ = engine._analyze_semantic("今天好累")
     for _ in range(5):
-        response = engine._generate_base_response("今天好累", ResponseStyle.SILENT)
-        response = engine._add_human_imperfections(response, ResponseStyle.SILENT)
+        response = engine._generate_core_response(emotion_type, ResponseStyle.SILENT)
+        response = engine._add_style_flavor(response, ResponseStyle.SILENT)
         print(f"  沉默: {response}")
 
     print("\n✓ 人类不完美特征测试通过")
