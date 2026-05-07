@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="logo/logo.png" width="400" alt="SereneChat Logo">
+<img src="logo/logo.png" width="500" alt="SereneChat Logo">
 
 # SereneChat - 小龙虾虚拟女友技能
 
@@ -117,7 +117,7 @@ python main.py
 | `风控` | 查看风控状态 |
 | `退出` | 退出程序 |
 
-### 新增命令 v1.1
+### 新增命令 v1.2
 
 | 命令 | 说明 |
 |------|------|
