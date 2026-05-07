@@ -1,5 +1,5 @@
 <div align="center">
-<img src="logo/logo.png" width="400" alt="SereneChat Logo">
+<img src="logo/logo.png" width="500" alt="SereneChat Logo">
 
 # SereneChat - 小龙虾虚拟女友技能
 
@@ -453,8 +453,17 @@ MIT License
 
 ---
 
+---
+
+## 社区交流
+
+- **项目交流群**: 1085911014
+- 欢迎加入讨论，提出建议和反馈
+
+---
+
 <div align="center">
 
-**用  制作**
+**用 Python 制作**
 
 </div>
