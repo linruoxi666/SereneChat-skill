@@ -10,6 +10,7 @@ from .content_moderation import ContentModerator, RiskLevel
 from .memory_system import MemoryManager
 from .character_preset import CharacterPresetManager, apply_preset_template
 from .proactive_messaging import ProactiveMessagingSystem
+from .humanized_response import HumanizedResponseEngine
 
 class ChatEngine:
     def __init__(self):
@@ -22,19 +23,28 @@ class ChatEngine:
         self.moderator = ContentModerator()
         self.violation_count = 0
         self.max_violations = 3
-        
+
         # 新增：记忆系统
         self.memory_manager = MemoryManager()
-        
+
         # 新增：人设管理
         self.character_manager = CharacterPresetManager()
         self.current_character = self.character_manager.get_current_character()
-        
+
         # 新增：主动消息系统
         self.proactive_system = ProactiveMessagingSystem(
             memory_manager=self.memory_manager,
             character=self.current_character
         )
+
+        # 新增：真人化回复引擎
+        self.humanized_engine = HumanizedResponseEngine(
+            memory_manager=self.memory_manager,
+            character=self.current_character
+        )
+
+        # 是否启用真人化模式
+        self.humanized_mode = True
     
     def chat(self, user_input: str) -> str:
         self.last_input = user_input
@@ -56,26 +66,33 @@ class ChatEngine:
         
         # 获取增强的上下文（包含记忆）
         enriched_context = self.memory_manager.get_enriched_context(user_input)
-        
+
         context = self._build_context()
-        response = self._generate_response(user_input, context, enriched_context)
-        
+
+        # 使用真人化回复引擎生成回复
+        if self.humanized_mode:
+            response, internal_monologue = self.humanized_engine.generate_response(user_input, context)
+        else:
+            response = self._generate_response(user_input, context, enriched_context)
+            internal_monologue = ""
+
         # 检查生成的回复是否安全
         response_risk, _, _ = self.moderator.check_text(response)
         if response_risk in [RiskLevel.HIGH, RiskLevel.CRITICAL]:
             response = "这个话题不太合适呢，我们聊点别的吧。"
         elif response_risk == RiskLevel.MEDIUM:
             response = self.moderator.filter_response(response)
-        
+
         # 保存到记忆系统
         self.memory_manager.process_interaction(user_input, response)
-        
+
         # 更新用户活跃时间
         self.proactive_system.update_activity()
-        
+
         self.chat_history.append({
             'user': user_input,
-            'bot': response
+            'bot': response,
+            'internal_monologue': internal_monologue
         })
         
         if len(self.chat_history) > 50:
@@ -404,3 +421,17 @@ class ChatEngine:
             'max_violations': self.max_violations,
             'is_restricted': self.violation_count >= self.max_violations
         }
+
+    def toggle_humanized_mode(self) -> bool:
+        """切换真人化模式"""
+        self.humanized_mode = not self.humanized_mode
+        return self.humanized_mode
+
+    def get_emotion_status(self) -> Dict[str, Any]:
+        """获取情绪状态"""
+        return self.humanized_engine.get_emotion_status()
+
+    def get_internal_monologue(self) -> str:
+        """获取最近的内心独白"""
+        thoughts = self.humanized_engine.get_recent_thoughts(3)
+        return "；".join(thoughts) if thoughts else ""

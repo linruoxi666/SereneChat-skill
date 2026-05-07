@@ -38,6 +38,9 @@ def print_menu():
     print("输入 '记忆' - 查看记忆状态")
     print("输入 '画像' - 查看用户画像")
     print("输入 '主动' - 开启/关闭主动消息模式")
+    print("输入 '真人' - 开启/关闭真人化回复模式")
+    print("输入 '内心' - 查看小龙虾的内心独白")
+    print("输入 '情绪' - 查看当前情绪状态")
     print("输入 '保存' - 保存当前对话")
     print("输入 '历史' - 查看聊天历史")
     print("输入 '清空' - 清空聊天记录")
@@ -208,7 +211,30 @@ def main():
             print("风控状态:")
             print(f"  违规次数: {status['violation_count']}/{status['max_violations']}")
             print(f"  是否受限: {'是' if status['is_restricted'] else '否'}")
-        
+
+        elif user_input == '真人':
+            enabled = engine.toggle_humanized_mode()
+            if enabled:
+                print("小龙虾: 真人化模式已开启！我会更像真人一样和你聊天")
+            else:
+                print("小龙虾: 真人化模式已关闭，恢复标准回复模式")
+
+        elif user_input == '内心':
+            monologue = engine.get_internal_monologue()
+            if monologue:
+                print(f"\n[小龙虾的内心独白] {monologue}")
+            else:
+                print("小龙虾: 我现在没什么特别的想法")
+
+        elif user_input == '情绪':
+            status = engine.get_emotion_status()
+            print("\n情绪状态:")
+            print(f"  当前情绪: {status['emotion']}")
+            print(f"  情绪强度: {status['intensity']}")
+            print(f"  关系阶段: {status['stage']}")
+            print(f"  关系深度: {status['relationship_depth']}")
+            print(f"  互动次数: {status['total_interactions']}")
+
         else:
             response = engine.chat(user_input)
             print(f"小龙虾: {response}")
