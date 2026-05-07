@@ -6,7 +6,7 @@
 **一个可以进行人格演绎的虚拟女友聊天机器人技能**  
 支持聊天记录导入模拟、聊天截图OCR识别、核心记忆系统、人设设定和真人化回复
 
-<img src="https://img.shields.io/badge/版本-v1.2.0-blue.svg?style=flat-square" alt="版本">
+<img src="https://img.shields.io/badge/版本-v1.1.0-blue.svg?style=flat-square" alt="版本">
 <img src="https://img.shields.io/badge/语言-Python-green.svg?style=flat-square" alt="语言">
 <img src="https://img.shields.io/badge/许可证-MIT-yellow.svg?style=flat-square" alt="许可证">
 <img src="https://img.shields.io/badge/风控-已启用-red.svg?style=flat-square" alt="风控">
