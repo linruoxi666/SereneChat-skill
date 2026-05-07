@@ -1,6 +1,9 @@
 
 import json
 import os
+import time
+import threading
+from datetime import datetime
 from src.chat_engine import ChatEngine
 
 def load_config():
@@ -34,6 +37,7 @@ def print_menu():
     print("输入 '人设' - 查看/设置当前人设")
     print("输入 '记忆' - 查看记忆状态")
     print("输入 '画像' - 查看用户画像")
+    print("输入 '主动' - 开启/关闭主动消息模式")
     print("输入 '保存' - 保存当前对话")
     print("输入 '历史' - 查看聊天历史")
     print("输入 '清空' - 清空聊天记录")
@@ -84,11 +88,30 @@ def character_menu(engine):
         elif choice == '5':
             break
 
+def proactive_message_loop(engine, stop_event, interval=30):
+    """主动消息循环 - 在后台运行"""
+    while not stop_event.is_set():
+        time.sleep(interval)
+        
+        if stop_event.is_set():
+            break
+        
+        # 检查是否需要发送主动消息
+        message = engine.check_proactive_message()
+        if message:
+            print(f"\n[小龙虾主动消息] {message}")
+            print("\n你: ", end="", flush=True)
+
 def main():
     config = load_config()
     engine = ChatEngine()
     
     print_welcome(config)
+    
+    # 主动消息模式
+    proactive_mode = False
+    proactive_thread = None
+    stop_event = threading.Event()
     
     while True:
         print_menu()
@@ -96,6 +119,9 @@ def main():
         user_input = input("你: ").strip()
         
         if user_input == '退出':
+            if proactive_thread:
+                stop_event.set()
+                proactive_thread.join(timeout=1)
             print("小龙虾: 再见啦，记得常来找我玩哦")
             break
         
@@ -137,6 +163,25 @@ def main():
             profile = engine.get_user_profile()
             print("\n用户画像:")
             print(profile)
+        
+        elif user_input == '主动':
+            proactive_mode = not proactive_mode
+            if proactive_mode:
+                print("小龙虾: 主动消息模式已开启！我会时不时找你聊天哦~")
+                # 启动主动消息线程
+                stop_event.clear()
+                proactive_thread = threading.Thread(
+                    target=proactive_message_loop,
+                    args=(engine, stop_event, 30),  # 每30秒检查一次
+                    daemon=True
+                )
+                proactive_thread.start()
+            else:
+                print("小龙虾: 主动消息模式已关闭")
+                if proactive_thread:
+                    stop_event.set()
+                    proactive_thread.join(timeout=1)
+                    proactive_thread = None
         
         elif user_input == '保存':
             filepath = input("请输入保存路径: ").strip()

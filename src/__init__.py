@@ -6,6 +6,7 @@ from .ocr_chat_parser import OCRChatParser, ChatPlatform, ChatMessage
 from .content_moderation import ContentModerator, RiskLevel
 from .memory_system import MemoryManager, CoreMemory, TemporaryMemory, MemoryEntry
 from .character_preset import CharacterPresetManager, CharacterProfile, apply_preset_template
+from .proactive_messaging import ProactiveMessagingSystem, TriggerType, ProactiveMessage
 
 __all__ = [
     'Personality', 
@@ -22,6 +23,9 @@ __all__ = [
     'TemporaryMemory',
     'MemoryEntry',
     'CharacterPresetManager',
-    'CharacterProfile'
+    'CharacterProfile',
+    'ProactiveMessagingSystem',
+    'TriggerType',
+    'ProactiveMessage'
 ]
 __version__ = '1.1.0'

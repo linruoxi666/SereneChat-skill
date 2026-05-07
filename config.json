@@ -1,6 +1,6 @@
 {
   "skill_name": "小龙虾",
-  "skill_description": "一个可以进行人格演绎的虚拟女友聊天机器人技能，支持聊天记录导入模拟、聊天截图OCR识别、核心记忆系统和人设设定",
+  "skill_description": "一个可以进行人格演绎的虚拟女友聊天机器人技能，支持聊天记录导入模拟、聊天截图OCR识别、核心记忆系统、人设设定和主动消息",
   "version": "1.1.0",
   "author": "linruoxi666",
   "email": "515308982@qq.com",
@@ -21,7 +21,8 @@
     "内容风控 - 防止色情、暴力等违规内容",
     "核心记忆系统 - 长期永久记忆",
     "临时记忆系统 - 短期上下文记忆",
-    "人设设定 - 无需聊天记录即可创建角色"
+    "人设设定 - 无需聊天记录即可创建角色",
+    "主动消息 - 小龙虾会主动找你聊天"
   ],
   "supported_chat_formats": [
     "微信 (WeChat)",
@@ -49,6 +50,12 @@
     },
     "character": {
       "preset_templates": ["tsundere", "gentle", "energetic", "mature"]
+    },
+    "proactive": {
+      "enabled": false,
+      "check_interval": 30,
+      "inactivity_threshold": 300,
+      "trigger_types": ["time_based", "inactivity", "mood_based", "event_based", "memory_based"]
     }
   }
 }

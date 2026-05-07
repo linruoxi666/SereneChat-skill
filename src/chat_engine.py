@@ -9,6 +9,7 @@ from .ocr_chat_parser import OCRChatParser, ChatPlatform
 from .content_moderation import ContentModerator, RiskLevel
 from .memory_system import MemoryManager
 from .character_preset import CharacterPresetManager, apply_preset_template
+from .proactive_messaging import ProactiveMessagingSystem
 
 class ChatEngine:
     def __init__(self):
@@ -28,6 +29,12 @@ class ChatEngine:
         # 新增：人设管理
         self.character_manager = CharacterPresetManager()
         self.current_character = self.character_manager.get_current_character()
+        
+        # 新增：主动消息系统
+        self.proactive_system = ProactiveMessagingSystem(
+            memory_manager=self.memory_manager,
+            character=self.current_character
+        )
     
     def chat(self, user_input: str) -> str:
         self.last_input = user_input
@@ -63,6 +70,9 @@ class ChatEngine:
         # 保存到记忆系统
         self.memory_manager.process_interaction(user_input, response)
         
+        # 更新用户活跃时间
+        self.proactive_system.update_activity()
+        
         self.chat_history.append({
             'user': user_input,
             'bot': response
@@ -73,6 +83,17 @@ class ChatEngine:
         
         self.last_response = response
         return response
+    
+    def check_proactive_message(self) -> Optional[str]:
+        """检查是否需要发送主动消息"""
+        message = self.proactive_system.check_triggers()
+        if message:
+            return message.content
+        return None
+    
+    def get_proactive_message(self) -> str:
+        """获取主动消息（用于定时调用）"""
+        return self.proactive_system.generate_proactive_message()
     
     def _build_context(self) -> str:
         context = ""
