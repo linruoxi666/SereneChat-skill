@@ -1,0 +1,54 @@
+{
+  "skill_name": "小龙虾",
+  "skill_description": "一个可以进行人格演绎的虚拟女友聊天机器人技能，支持聊天记录导入模拟、聊天截图OCR识别、核心记忆系统和人设设定",
+  "version": "1.1.0",
+  "author": "linruoxi666",
+  "email": "515308982@qq.com",
+  "language": "zh-CN",
+  "personality": {
+    "name": "小龙虾",
+    "age": 22,
+    "occupation": "大学生",
+    "personality_type": "INFP",
+    "love_language": "陪伴和细心"
+  },
+  "features": [
+    "人格演绎 - 虚拟女友模式",
+    "人类风格回复 - 不带emoji表情",
+    "聊天记录导入 - 支持多种格式",
+    "聊天截图识别 - OCR识别聊天内容",
+    "智能识别系统 - 自动检测聊天记录格式",
+    "内容风控 - 防止色情、暴力等违规内容",
+    "核心记忆系统 - 长期永久记忆",
+    "临时记忆系统 - 短期上下文记忆",
+    "人设设定 - 无需聊天记录即可创建角色"
+  ],
+  "supported_chat_formats": [
+    "微信 (WeChat)",
+    "QQ",
+    "Telegram",
+    "WhatsApp",
+    "JSON",
+    "纯文本",
+    "聊天截图 (OCR)"
+  ],
+  "settings": {
+    "max_history_length": 50,
+    "context_window": 10,
+    "remove_emoji": true,
+    "auto_save": true,
+    "content_moderation": {
+      "enabled": true,
+      "max_violations": 3,
+      "risk_levels": ["safe", "low", "medium", "high", "critical"]
+    },
+    "memory": {
+      "core_memory_enabled": true,
+      "temp_memory_enabled": true,
+      "memory_extraction_interval": 5
+    },
+    "character": {
+      "preset_templates": ["tsundere", "gentle", "energetic", "mature"]
+    }
+  }
+}

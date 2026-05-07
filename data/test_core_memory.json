@@ -1,0 +1,38 @@
+{
+  "facts": [
+    {
+      "content": "用户叫小明",
+      "timestamp": "2026-05-08T00:15:47.428942",
+      "importance": 0.8,
+      "category": "facts",
+      "context": "",
+      "access_count": 1,
+      "last_accessed": "2026-05-08T00:15:47.428942"
+    }
+  ],
+  "emotions": [
+    {
+      "content": "用户今天很开心",
+      "timestamp": "2026-05-08T00:15:47.436978",
+      "importance": 0.6,
+      "category": "emotions",
+      "context": "",
+      "access_count": 1,
+      "last_accessed": "2026-05-08T00:15:47.436978"
+    }
+  ],
+  "preferences": [
+    {
+      "content": "用户喜欢吃火锅",
+      "timestamp": "2026-05-08T00:15:47.433451",
+      "importance": 0.7,
+      "category": "preferences",
+      "context": "",
+      "access_count": 1,
+      "last_accessed": "2026-05-08T00:15:47.433451"
+    }
+  ],
+  "events": [],
+  "habits": [],
+  "relationships": []
+}
